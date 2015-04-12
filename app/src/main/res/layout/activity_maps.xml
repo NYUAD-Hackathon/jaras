@@ -80,7 +80,7 @@
                 android:id="@+id/postwindow"
                 android:layout_marginTop="10dp"
                 android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="200dp"
                 android:background="@drawable/round_white_bg"
                 android:hint="Enter your story ..."
                 android:paddingTop="8dp"
