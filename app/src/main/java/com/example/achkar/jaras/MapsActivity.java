@@ -1,17 +1,28 @@
 package com.example.achkar.jaras;
 
+import android.content.Context;
 import android.content.Intent;
+import android.location.Address;
+import android.location.Geocoder;
 import android.media.Image;
+import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
-
-
 import android.app.Activity;
 import android.os.Bundle;
+import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.BaseAdapter;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.*;
 import com.google.android.gms.maps.model.*;
@@ -19,14 +30,34 @@ import com.google.android.gms.maps.model.*;
 //Azure server
 import com.microsoft.windowsazure.mobileservices.*;
 
-public class MapsActivity extends FragmentActivity {
+import org.apache.http.NameValuePair;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicNameValuePair;
+import org.json.JSONObject;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+
+public class MapsActivity extends FragmentActivity implements GoogleMap.OnMapClickListener {
+
 
     private MobileServiceClient mClient;
 
     private GoogleMap mMap; // Might be null if Google Play services APK is not available.
-    private Button b1;
     private ImageButton b2;
+    private Button b3;
+    private ImageButton b4;
+    private EditText eText, eTextTitle;
     public Activity activity;
+    private Button b5;
+    private TextView mTapTextView;
+    private String country = "United Arab Emirates";
+    String currentpost, currentTitle;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,36 +65,101 @@ public class MapsActivity extends FragmentActivity {
         setContentView(R.layout.activity_maps);
         setUpMapIfNeeded();
 
-        try{
-            mClient = new MobileServiceClient(
-                    "http://jaras.azure-mobile.net/",
-                    "HUalXvNevKpijjAHuYJBTzzRZRpLUV47",
-                    this
-            );}
-        catch (Exception e){}
+
+        setUpMapIfNeeded();
 
         activity = this;
-
-        b1 = (Button) findViewById(R.id.seepost_button);
-        b1.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent goIntent = new Intent(activity, SeePost.class);
-                startActivity(goIntent);
-            }
-        });
-
 
         final FrameLayout f1 = (FrameLayout) findViewById(R.id.postext);
         b2 = (ImageButton) findViewById(R.id.imageButton);
         b2.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                    f1.setVisibility(View.VISIBLE);
+                f1.setVisibility(View.VISIBLE);
+
             }
 
         });
+
+        b4 = (ImageButton) findViewById(R.id.closebutton);
+        b4.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                f1.setVisibility(View.GONE);
+            }
+
+        });
+
+
+
+        b3 = (Button) findViewById(R.id.ringbutton);
+        b3.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v){
+                eText = (EditText) findViewById(R.id.postwindow);
+                eTextTitle = (EditText) findViewById(R.id.titleaction);
+                currentpost = String.valueOf(eText.getText());
+                currentTitle = String.valueOf(eTextTitle.getText());
+                new DBRequest(activity, activity).execute("post message", 0, currentpost, currentTitle);
+            }
+        });
+
+        //mTapTextView = (TextView) findViewById(R.id.);
+        mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
+            @Override
+            public void onMapClick(LatLng latLng) {
+                country = getCountry(latLng);
+                new DBRequest(activity, activity).execute("retrieve posts", 1, country);
+            }
+        });
+
+
     }
+
+
+    @Override
+    public void onMapClick(LatLng point) {
+        //mTapTextView.setText("tapped, point=" + point);
+
+    }
+
+    public String getCountry(LatLng point){
+        Geocoder geocoder = new Geocoder(this, Locale.getDefault());
+
+        try{
+            List<Address> addresses = geocoder.getFromLocation(point.latitude, point.longitude, 1);
+            Address obj = addresses.get(0);
+            //String add = obj.getAddressLine(0);
+            //GUIStatics.currentAddress = obj.getSubAdminArea() + "," + obj.getAdminArea();
+            //GUIStatics.latitude = obj.getLatitude();
+            //GUIStatics.longitude = obj.getLongitude();
+            //GUIStatics.currentCity= obj.getSubAdminArea();
+            //GUIStatics.currentState= obj.getAdminArea();
+            //add = add + "\n" + obj.getCountryName();
+            //add = add + "\n" + obj.getCountryCode();
+            //add = add + "\n" + obj.getAdminArea();
+            //add = add + "\n" + obj.getPostalCode();
+            //add = add + "\n" + obj.getSubAdminArea();
+            //add = add + "\n" + obj.getLocality();
+            //add = add + "\n" + obj.getSubThoroughfare();
+
+            //Log.v("IGA", "Address" + add);
+            // Toast.makeText(this, "Address=>" + add,
+            // Toast.LENGTH_SHORT).show();
+
+            // TennisAppActivity.showDialog(add);
+
+            return obj.getCountryName();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
+
+            return null;
+        }
+    }
+
+
 
 
     @Override
